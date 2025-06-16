@@ -7,16 +7,12 @@ import (
 
 func (gm *GoMap[K, V]) Populate(ctx context.Context, data map[K]V) chan error {
 	errChan := make(chan error, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 
 		gm.jobs <- func() {
-			gm.counter.Add(1)
-			defer gm.counter.Add(^uint64(0)) // Decrement the counter when done
 			select {
-			case <-true	:
-				errChan <- fmt.Errorf("job limit exceeded: %d", gm.limit)
-				return
 
 			case <-ctx.Done():
 				errChan <- ctx.Err()
@@ -36,9 +32,9 @@ func (gm *GoMap[K, V]) Populate(ctx context.Context, data map[K]V) chan error {
 
 func (gm *GoMap[K, V]) Overwrite(ctx context.Context, key K, value V) chan error {
 	errChan := make(chan error, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
-
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -58,9 +54,9 @@ func (gm *GoMap[K, V]) Overwrite(ctx context.Context, key K, value V) chan error
 func (gm *GoMap[K, V]) Set(ctx context.Context, key K, value V) chan error {
 
 	errChan := make(chan error, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
-
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -80,9 +76,9 @@ func (gm *GoMap[K, V]) Set(ctx context.Context, key K, value V) chan error {
 func (gm *GoMap[K, V]) Get(ctx context.Context, key K) (chan V, chan error) {
 	errChan := make(chan error, 1)
 	valueChan := make(chan V, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
-
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -110,9 +106,9 @@ func (gm *GoMap[K, V]) Get(ctx context.Context, key K) (chan V, chan error) {
 
 func (gm *GoMap[K, V]) Delete(ctx context.Context, key K) chan error {
 	errChan := make(chan error, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
-
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -135,9 +131,9 @@ func (gm *GoMap[K, V]) Delete(ctx context.Context, key K) chan error {
 
 func (gm *GoMap[K, V]) Clear(ctx context.Context) chan error {
 	errChan := make(chan error, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
-
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -157,8 +153,9 @@ func (gm *GoMap[K, V]) Clear(ctx context.Context) chan error {
 func (gm *GoMap[K, V]) Contains(ctx context.Context, key K) (chan bool, chan error) {
 	containsChan := make(chan bool, 1)
 	errChan := make(chan error, 1)
-
+	gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -178,8 +175,9 @@ func (gm *GoMap[K, V]) Contains(ctx context.Context, key K) (chan bool, chan err
 func (gm *GoMap[K, V]) Size(ctx context.Context) (chan int, chan error) {
 	sizeChan := make(chan int, 1)
 	errChan := make(chan error, 1)
-
+gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -200,8 +198,9 @@ func (gm *GoMap[K, V]) Size(ctx context.Context) (chan int, chan error) {
 func (gm *GoMap[K, V]) Keys(ctx context.Context) (chan []K, chan error) {
 	keysChan := make(chan []K, 1)
 	errChan := make(chan error, 1)
-
+gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -225,8 +224,9 @@ func (gm *GoMap[K, V]) Keys(ctx context.Context) (chan []K, chan error) {
 func (gm *GoMap[K, V]) Values(ctx context.Context) (chan []V, chan error) {
 	valuesChan := make(chan []V, 1)
 	errChan := make(chan error, 1)
-
+gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -249,8 +249,9 @@ func (gm *GoMap[K, V]) Values(ctx context.Context) (chan []V, chan error) {
 
 func (gm *GoMap[K, V]) ForEach(ctx context.Context, fn func(K, V) error) chan error {
 	errChan := make(chan error, 1)
-
+gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 			select {
 			case <-ctx.Done():
@@ -275,8 +276,9 @@ func (gm *GoMap[K, V]) ForEach(ctx context.Context, fn func(K, V) error) chan er
 func (gm *GoMap[K, V]) Clone(ctx context.Context) (chan *GoMap[K, V], chan error) {
 	errChan := make(chan error, 1)
 	cloneChan := make(chan *GoMap[K, V], 1)
-
+gm.adquireLimiter() // Acquire a slot in the limiter
 	go func() {
+		defer gm.releaseLimiter() // Ensure the slot is released when done
 		gm.jobs <- func() {
 
 			select {
@@ -295,4 +297,16 @@ func (gm *GoMap[K, V]) Clone(ctx context.Context) (chan *GoMap[K, V], chan error
 	}()
 
 	return cloneChan, errChan
+}
+
+func (gm *GoMap[K, V]) adquireLimiter() {
+	select {
+	case gm.limiter <- struct{}{}: // Acquire a slot in the limiter
+	default:
+		// If the channel is full, block until a slot is available
+		gm.limiter <- struct{}{}
+	}
+}
+func (gm *GoMap[K, V]) releaseLimiter() {
+	<-gm.limiter // Release the slot in the limiter
 }
