@@ -4,7 +4,8 @@ import (
 	"sync"
 )
 
-type GOCounter struct {
-	counter uint64
-	mu      sync.Mutex
+type GOCounter[T Number] struct {
+	counter      T
+	initialValue T
+	mu           sync.Mutex
 }
